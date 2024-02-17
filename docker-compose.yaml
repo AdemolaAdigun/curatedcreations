@@ -1,0 +1,30 @@
+version: '3.8' # Updated for better compatibility with newer Docker versions
+
+services:
+  postgres:
+    image: postgres:14 
+    container_name: postgres
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: root
+    ports:
+      - "8080:5432"
+
+  graphql-engine:
+    image: hasura/graphql-engine:v2.6.1 # Updated to Hasura GraphQL Engine v2.6.1, check for the latest version
+    container_name: hasura
+    ports:
+      - "9090:8080"
+    depends_on:
+      - postgres
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:root@postgres:5432/postgres # Updated to use the password
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # Set to "false" to disable console
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
+
+volumes:
+  db_data:
