@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Artist {
+  id       String    @id @default(uuid())
+  name     String
+  bio      String?
+  avatar   String?
+  artworks Artwork[]
+  user     User      @relation(fields: [userId], references: [id])
+  userId   String    @unique
+}
+
+model Artwork {
+  id               String             @id @default(uuid())
+  artistId         String
+  title            String
+  description      String?
+  file             String // Path or URL to artwork file
+  price            Float
+  artist           Artist             @relation(fields: [artistId], references: [id])
+  materials        Material[]         @relation("ArtworkMaterials")
+  orders           OrderItem[] // Adjusted to link through OrderItem
+  ArtworkMaterials ArtworkMaterials[]
+}
+
+model ArtworkMaterials {
+  id         String      @id @default(uuid())
+  artwork    Artwork     @relation(fields: [artworkId], references: [id])
+  artworkId  String
+  material   Material    @relation(fields: [materialId], references: [id])
+  materialId String
+  price      Float // Price override for specific artwork-material combinations
+  OrderItem  OrderItem[]
+}
+
+model Material {
+  id               String             @id @default(uuid())
+  name             String
+  description      String?
+  price            Float // Base price for the material
+  artworks         Artwork[]          @relation("ArtworkMaterials")
+  ArtworkMaterials ArtworkMaterials[]
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  userId     String
+  orderDate  DateTime
+  status     String
+  user       User        @relation(fields: [userId], references: [id])
+  orderItems OrderItem[] // Represents items within the order
+}
+
+model OrderItem {
+  id                String           @id @default(uuid())
+  orderId           String // Foreign key to Order
+  artworkMaterialId String // Composite foreign key to ArtworkMaterials
+  quantity          Int
+  order             Order            @relation(fields: [orderId], references: [id])
+  artworkMaterial   ArtworkMaterials @relation(fields: [artworkMaterialId], references: [id])
+  Artwork           Artwork?         @relation(fields: [artworkId], references: [id])
+  artworkId         String?
+
+  @@unique([orderId, artworkMaterialId]) // Ensure unique combination per order
+}
+
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String
+  fullName String
+  address  String?
+  isArtist Boolean @default(false)
+  orders   Order[]
+  artist   Artist?
+}
